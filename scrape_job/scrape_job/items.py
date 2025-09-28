@@ -1,12 +1,22 @@
-# Define here the models for your scraped items
-#
-# See documentation in:
-# https://docs.scrapy.org/en/latest/topics/items.html
-
 import scrapy
 
-
-class ScrapeJobItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+class VietnamworksItem(scrapy.Item):
+    groupJob_id = scrapy.Field()
+    groupJob_name = scrapy.Field()
+    
+    job_id = scrapy.Field()
+    title = scrapy.Field()
+    createdOn = scrapy.Field()
+    approvedOn = scrapy.Field()
+    expiredOn = scrapy.Field()
+    
+    jobDescription = scrapy.Field()
+    jobRequirement = scrapy.Field()
+    
+    salaryMax = scrapy.Field()
+    salaryMin = scrapy.Field()
+    
+    companyId = scrapy.Field()
+    companyName = scrapy.Field()
+    location = scrapy.Field()
+    job_url = scrapy.Field()
