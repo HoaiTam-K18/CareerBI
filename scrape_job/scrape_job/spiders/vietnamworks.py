@@ -1,5 +1,6 @@
 import scrapy
 import json
+from ..items import VietnamworksItem
 
 
 class VietnamworksSpider(scrapy.Spider):
@@ -18,6 +19,7 @@ class VietnamworksSpider(scrapy.Spider):
         for groupJob in groupJobs:
             attrs = groupJob.get("attributes", {})
             groupJob_id = attrs.get("groupJobFunctionId")
+            groupJob_name = attrs.get("groupJobFunctionName")
             if groupJob_id:
                 filter_obj = {
                     "field": "jobFunction",
@@ -35,7 +37,7 @@ class VietnamworksSpider(scrapy.Spider):
         }
 
         # chạy lần đầu cho từng ngành nghề
-        for job_id, filter_obj in jobs_filters:
+        for groupJob_id, filter_obj in jobs_filters:
             payload = {
                 "userId": 0,
                 "query": "",
@@ -43,9 +45,14 @@ class VietnamworksSpider(scrapy.Spider):
                 "ranges": [],
                 "order": [],
                 "hitsPerPage": 50,
-                "page": 0,   # API bắt đầu từ 0
+                "page": 0,
                 "retrieveFields": [
-                    "jobTitle", "companyName", "jobUrl", "workingLocations"
+                    "jobId", "jobTitle", "companyName", "jobUrl", "workingLocations",
+                    "address", "createdOn", "approvedOn", "expiredOn",
+                    "jobDescription", "jobRequirement",
+                    "salaryMax", "salaryMin", "salaryCurrency",
+                    "companyId",
+                    "skills", "benefits", "industriesV3", "jobFunctionsV3", "groupJobFunctionsV3"
                 ],
                 "summaryVersion": ""
             }
@@ -56,7 +63,7 @@ class VietnamworksSpider(scrapy.Spider):
                 headers=headers,
                 body=json.dumps(payload),
                 meta={
-                    "job_id": job_id,
+                    "groupJob_id": groupJob_id,
                     "filter_obj": filter_obj,
                     "page": 0,
                     "hits_per_page": 50
@@ -65,7 +72,7 @@ class VietnamworksSpider(scrapy.Spider):
             )
 
     def parse_api(self, response):
-        job_id = response.meta["job_id"]
+        groupJob_id = response.meta["groupJob_id"]
         page = response.meta["page"]
         filter_obj = response.meta["filter_obj"]
         hits_per_page = response.meta["hits_per_page"]
@@ -73,25 +80,44 @@ class VietnamworksSpider(scrapy.Spider):
         try:
             data = json.loads(response.text)
         except Exception as e:
-            self.logger.error(f"❌ Lỗi parse JSON: {e}")
+            self.logger.error(f"Lỗi parse JSON: {e}")
             return
 
         jobs = data.get("data", [])
 
         self.logger.info(
-            f"JobID {job_id} - Page {page} - {len(jobs)} jobs"
+            f"groupJob_id: {groupJob_id} - Page {page} - {len(jobs)} jobs"
         )
 
         for job in jobs:
-            yield {
-                "job_id": job_id,
-                "title": job.get("jobTitle"),
-                "url": job.get("jobUrl"),
-                "company": job.get("companyName"),
-                "location": job.get("workingLocations"),
-            }
 
-        # Nếu số job == hits_per_page thì crawl tiếp trang sau
+            item = VietnamworksItem()
+
+            item["skills"] = job.get("skills", [])
+            item["benefits"] = job.get("benefits", [])
+            item["industriesV3"] = job.get("industriesV3", [])
+            item["jobFunctionsV3"] = job.get("jobFunctionsV3")
+
+
+            item["groupJob_id"] = groupJob_id
+            item["job_id"] = job.get("jobId")
+            item["title"] = job.get("jobTitle")
+            item["createdOn"] = job.get("createdOn")
+            item["approvedOn"] = job.get("approvedOn")
+            item["expiredOn"] = job.get("expiredOn")
+            item["address"] = job.get("address")
+            item["jobDescription"] = job.get("jobDescription")
+            item["jobRequirement"] = job.get("jobRequirement")
+            item["salaryMax"] = job.get("salaryMax")
+            item["salaryMin"] = job.get("salaryMin")
+            item["salaryCurrency"] = job.get("salaryCurrency")
+            item["companyId"] = job.get("companyId")
+            item["companyName"] = job.get("companyName")
+            item["location"] = job.get("workingLocations")
+            item["job_url"] = job.get("jobUrl")
+
+            yield item
+
         if len(jobs) == hits_per_page:
             next_page = page + 1
             new_payload = {
@@ -114,7 +140,7 @@ class VietnamworksSpider(scrapy.Spider):
                 headers=response.request.headers,
                 body=json.dumps(new_payload),
                 meta={
-                    "job_id": job_id,
+                    "groupJob_id": groupJob_id,
                     "page": next_page,
                     "filter_obj": filter_obj,
                     "hits_per_page": hits_per_page
