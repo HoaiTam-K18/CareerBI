@@ -26,6 +26,46 @@ ROBOTSTXT_OBEY = False
 CONCURRENT_REQUESTS_PER_DOMAIN = 1
 DOWNLOAD_DELAY = 1
 
+# settings.py
+
+# ... (các setting khác) ...
+
+# Configure item pipelines
+# See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
+# settings.py
+
+# ... (các setting khác) ...
+
+# Configure item pipelines
+# settings.py
+
+# ... (các setting khác) ...
+
+# Configure item pipelines
+ITEM_PIPELINES = {
+   # Pipeline làm sạch
+   "scrape_job.pipelines.JobCleanPipeline": 100,
+   
+   # Các pipeline bóc tách bảng Chiều (Dimension) và Bảng Nối (Bridge)
+   "scrape_job.pipelines.CompanyPipeline": 200,
+   "scrape_job.pipelines.CityPipeline": 210,
+   "scrape_job.pipelines.SkillPipeline": 220,
+   "scrape_job.pipelines.BenefitPipeline": 230,
+   "scrape_job.pipelines.IndustryPipeline": 240,
+   "scrape_job.pipelines.JobFunctionPipeline": 250,
+   "scrape_job.pipelines.GroupJobFunctionPipeline": 260,
+   
+   # <<< PIPELINE MỚI (CHẠY TRƯỚC BẢNG FACT)
+   "scrape_job.pipelines.JobTimePipeline": 700, 
+   
+   # Pipeline bảng Fact (chạy cuối cùng)
+   "scrape_job.pipelines.JobPostingPipeline": 800, # <<< (ĐÃ SỬA)
+}
+
+
+
+
+
 # Disable cookies (enabled by default)
 #COOKIES_ENABLED = False
 
