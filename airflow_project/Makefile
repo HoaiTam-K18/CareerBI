@@ -1,46 +1,78 @@
 # Makefile for the CareerBI Airflow Project
 
-.PHONY: all up down start stop restart ui db-dwh db-meta logs help
-
+# Target mặc định, chạy khi bạn chỉ gõ "make"
+.PHONY: all up down start stop restart ui db logs help clean-logs full-reset
 all: up
 
+# Khởi động tất cả dịch vụ (ở chế độ nền)
+# (Thêm --build để nó xây dựng Dockerfile, cài scrapy/pandas)
 up:
-	@echo "🚀 Starting Airflow (Webserver, Scheduler) and SQL Server..."
-	@echo "Lần đầu chạy sẽ mất thời gian để build image (cài driver MSSQL)..."
+	@echo "🚀 Starting Airflow (Webserver, Scheduler) and Postgres..."
+	@echo "Building custom image with scrapy/pandas/sqlalchemy..."
 	docker-compose up -d --build
 
+# Dừng và gỡ bỏ tất cả container
 down:
-	@echo "🛑 Stopping and removing all services..."
+	@echo "🛑 Stopping and removing all Airflow containers..."
 	docker-compose down
 
+# 'start' và 'stop' là các tên gọi khác (alias) cho tiện
 start: up
 stop: down
+
+# Khởi động lại toàn bộ dịch vụ
 restart: down up
 
+# Mở giao diện Web Airflow
 ui:
 	@echo "Opening Airflow UI at http://localhost:8080..."
+	@echo "Nếu trình duyệt không tự mở, hãy truy cập: http://localhost:8080"
 	@if [ "$(shell uname)" = "Darwin" ]; then \
 		open http://localhost:8080; \
 	else \
 		xdg-open http://localhost:8080; \
 	fi
 
-# Truy cập DB DWH (careerbi)
-db-dwh:
-	@echo "Connecting to SQL Server DWH (database: careerbi)..."
-	@echo "Gõ 'exit' để thoát."
-	docker-compose exec sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -d careerbi -P ${MSSQL_SA_PASSWORD}
+# Truy cập vào shell psql của database 'careerbi'
+db:
+	@echo "Connecting to PostgreSQL database 'careerbi' as user 'careerbi_user'..."
+	@echo "Gõ '\\q' để thoát."
+	docker-compose exec postgres psql -U careerbi_user -d careerbi
 
-# Truy cập DB Metadata (airflow_meta)
-db-meta:
-	@echo "Connecting to SQL Server Metadata (database: airflow_meta)..."
-	@echo "Gõ 'exit' để thoát."
-	docker-compose exec sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -d ${AIRFLOW_METADATA_DB} -P ${MSSQL_SA_PASSWORD}
-
+# Xem log của tất cả các service
 logs:
 	@echo "Tailing logs for all services (Press Ctrl+C to exit)..."
 	docker-compose logs -f --tail=100
 
+# ===================================================================================
+# LỆNH DỌN DẸP (NÂNG CAO)
+# ===================================================================================
+
+# Lệnh này chỉ xóa file log (an toàn)
+clean-logs:
+	@echo "🧹 Cleaning up log files..."
+	@echo "Lưu ý: Có thể bạn cần nhập mật khẩu (sudo) để xóa file do Docker tạo"
+	sudo rm -rf ./logs/*
+	@echo "Done."
+
+# Lệnh này reset TOÀN BỘ (NGUY HIỂM)
+# Nó sẽ xóa hết database, log, và dừng container
+full-reset:
+	@echo "🔥 WARNING: This will delete ALL containers, logs, AND THE DATABASE. 🔥"
+	@read -p "Bạn có chắc chắn muốn reset toàn bộ? (y/N) " -r; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		echo "Nuking all data..."; \
+		docker-compose down -v; \
+		sudo rm -rf ./logs/*; \
+		sudo rm -rf ./data/clean/*; \
+		echo "Full reset complete. Bạn có thể chạy 'make up' để bắt đầu lại từ đầu."; \
+	else \
+		echo "Hủy bỏ."; \
+	fi
+
+# ===================================================================================
+
+# Target trợ giúp, liệt kê các lệnh
 help:
 	@echo "Available commands for CareerBI project:"
 	@echo "------------------------------------------------"
@@ -48,6 +80,7 @@ help:
 	@echo "  make down      : Dừng và gỡ bỏ tất cả dịch vụ."
 	@echo "  make restart   : Khởi động lại tất cả dịch vụ."
 	@echo "  make ui        : Mở giao diện Web Airflow (localhost:8080)."
-	@echo "  make db-dwh    : Truy cập vào DB Data Warehouse (careerbi)."
-	@echo "  make db-meta   : Truy cập vào DB Metadata của Airflow (airflow_meta)."
+	@echo "  make db        : Truy cập vào database 'careerbi' (Postgres)."
 	@echo "  make logs      : Xem log của các dịch vụ đang chạy."
+	@echo "  make clean-logs: (An toàn) Xóa các file log trong thư mục ./logs."
+	@echo "  make full-reset: (Nguy hiểm) Xóa hết container, database và logs."
