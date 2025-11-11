@@ -66,6 +66,7 @@ services:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
+      - ../dbt_project:/opt/airflow/dbt_project
     ports:
       - "8080:8080"
     command: webserver
@@ -93,6 +94,7 @@ services:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
+      - ../dbt_project:/opt/airflow/dbt_project
     command: scheduler
     restart: always
 
