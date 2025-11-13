@@ -1,0 +1,115 @@
+version: 2
+
+models:
+  # === 9 BẢNG DIMENSIONS ===
+  - name: dim_date
+    columns:
+      - name: date_key
+        data_tests: [ unique, not_null ]
+
+  - name: dim_job # <-- Dimension "Chung"
+    columns:
+      - name: job_id
+        data_tests: [ unique, not_null ]
+
+  - name: dim_companies
+    columns:
+      - name: company_id
+        data_tests: [ unique, not_null ]
+  
+  - name: dim_cities
+    columns:
+      - name: city_id
+        data_tests: [ unique, not_null ]
+
+  - name: dim_skills
+    columns:
+      - name: skill_id
+        data_tests: [ unique, not_null ]
+  
+  - name: dim_benefits
+    columns:
+      - name: benefit_id
+        data_tests: [ unique, not_null ]
+  
+  - name: dim_industries
+    columns:
+      - name: industry_id
+        data_tests: [ unique, not_null ]
+
+  - name: dim_job_functions
+    columns:
+      - name: job_function_id
+        data_tests: [ unique, not_null ]
+
+  - name: dim_group_job_functions
+    columns:
+      - name: group_job_function_id
+        data_tests: [ unique, not_null ]
+
+  # === 7 BẢNG FACTS ===
+  - name: fct_job_postings # Fact chính
+    columns:
+      - name: job_id # Test FK trỏ đến Dim "chung"
+        data_tests:
+          - relationships: { to: ref('dim_job'), field: job_id }
+      - name: company_id
+        data_tests:
+          - relationships: { to: ref('dim_companies'), field: company_id }
+      - name: posted_date_key
+        data_tests:
+          - relationships: { to: ref('dim_date'), field: date_key }
+
+  - name: fct_job_skills # Fact "Không số"
+    columns:
+      - name: job_id # Test FK trỏ đến Dim "chung"
+        data_tests:
+          - relationships: { to: ref('dim_job'), field: job_id }
+      - name: skill_id
+        data_tests:
+          - relationships: { to: ref('dim_skills'), field: skill_id }
+
+  - name: fct_job_cities
+    columns:
+      - name: job_id
+        data_tests:
+          - relationships: { to: ref('dim_job'), field: job_id }
+      - name: city_id
+        data_tests:
+          - relationships: { to: ref('dim_cities'), field: city_id }
+  
+  - name: fct_job_benefits
+    columns:
+      - name: job_id
+        data_tests:
+          - relationships: { to: ref('dim_job'), field: job_id }
+      - name: benefit_id
+        data_tests:
+          - relationships: { to: ref('dim_benefits'), field: benefit_id }
+          
+  - name: fct_job_industries
+    columns:
+      - name: job_id
+        data_tests:
+          - relationships: { to: ref('dim_job'), field: job_id }
+      - name: industry_id
+        data_tests:
+          - relationships: { to: ref('dim_industries'), field: industry_id }
+          
+  - name: fct_job_jobfunctions
+    columns:
+      - name: job_id
+        data_tests:
+          - relationships: { to: ref('dim_job'), field: job_id }
+      - name: job_function_id
+        data_tests:
+          - relationships: { to: ref('dim_job_functions'), field: job_function_id }
+          
+  - name: fct_job_group_jobfunctions
+    columns:
+      - name: job_id
+        data_tests:
+          - relationships: { to: ref('dim_job'), field: job_id }
+      - name: group_job_function_id
+        data_tests:
+          - relationships: { to: ref('dim_group_job_functions'), field: group_job_function_id }

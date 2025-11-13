@@ -1,0 +1,29 @@
+version: 2
+
+sources:
+  - name: silver # Tên nguồn (để gọi ở {{ source(...) }})
+    description: "Tầng Silver (đã làm sạch) của CSDL careerbi"
+    database: careerbi
+    schema: silver # Schema nguồn
+
+    tables:
+      # 7 Bảng "Nguyên liệu" cho Dims
+      - name: silver_companies
+      - name: silver_cities
+      - name: silver_skills
+      - name: silver_benefits
+      - name: silver_industries
+      - name: silver_job_functions
+      - name: silver_group_job_functions
+
+      # 2 Bảng "Nguyên liệu" cho Facts
+      - name: silver_job_postings
+      - name: silver_job_timelife
+
+      # 6 Bảng "Nguyên liệu" cho Facts "Không số" (M2M)
+      - name: silver_bridge_job_skills
+      - name: silver_bridge_job_benefits
+      - name: silver_bridge_job_industries
+      - name: silver_bridge_job_cities
+      - name: silver_bridge_job_jobfunctions
+      - name: silver_bridge_job_group_jobfunctions

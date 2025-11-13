@@ -1,0 +1,26 @@
+careerbi_gold:
+  
+  target: dev 
+  
+  outputs:
+    # 💻 "Thế giới" 1: Cho MÁY MAC của bạn
+    dev:
+      type: postgres
+      host: localhost     # <-- BẮT BUỘC là 'localhost' (hoặc '127.0.0.1')
+      user: careerbi_user
+      pass: careerbi_password
+      port: 5432
+      dbname: careerbi
+      schema: gold_dev
+      threads: 4
+
+    # 🐳 "Thế giới" 2: Cho AIRFLOW (Docker)
+    prod:
+      type: postgres
+      host: postgres    # <-- BẮT BUỘC là 'postgres'
+      user: careerbi_user
+      pass: careerbi_password
+      port: 5432
+      dbname: careerbi
+      schema: gold
+      threads: 4
