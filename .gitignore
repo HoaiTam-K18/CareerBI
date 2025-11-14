@@ -2,3 +2,6 @@ data/
 venv/
 .env
 .vscode/
+logs/
+.DS_Store
+credentials.json
