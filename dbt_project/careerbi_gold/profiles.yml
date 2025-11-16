@@ -6,7 +6,7 @@ careerbi_gold:
     # 💻 "Thế giới" 1: Cho MÁY MAC của bạn
     dev:
       type: postgres
-      host: localhost     # <-- BẮT BUỘC là 'localhost' (hoặc '127.0.0.1')
+      host: localhost
       user: careerbi_user
       pass: careerbi_password
       port: 5432
@@ -17,7 +17,7 @@ careerbi_gold:
     # 🐳 "Thế giới" 2: Cho AIRFLOW (Docker)
     prod:
       type: postgres
-      host: postgres    # <-- BẮT BUỘC là 'postgres'
+      host: postgres
       user: careerbi_user
       pass: careerbi_password
       port: 5432

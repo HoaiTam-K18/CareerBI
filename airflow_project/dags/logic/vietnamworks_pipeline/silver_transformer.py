@@ -136,6 +136,9 @@ def transform_silver():
             df.loc[vnd_rows, 'salary_max'] = df.loc[vnd_rows, 'salary_max'] / VND_TO_USD_RATE
             df.loc[vnd_rows, 'salary_min'] = df.loc[vnd_rows, 'salary_min'] / VND_TO_USD_RATE
             df.loc[vnd_rows, 'salary_currency'] = 'USD'
+            dirty_usd_rows = df['salary_max'] > 1000000
+            df.loc[dirty_usd_rows, 'salary_max'] = df.loc[dirty_usd_rows, 'salary_max'] / VND_TO_USD_RATE
+            df.loc[dirty_usd_rows, 'salary_min'] = df.loc[dirty_usd_rows, 'salary_min'] / VND_TO_USD_RATE
             df_silver = df[['job_id', 'title', 'job_description', 'job_requirement', 'salary_max', 'salary_min', 'salary_currency', 'company_id', 'job_url', 'last_updated_date']]
             df_silver = df_silver.set_index('job_id')
             
