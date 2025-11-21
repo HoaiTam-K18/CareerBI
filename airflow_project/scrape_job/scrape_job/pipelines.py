@@ -58,7 +58,7 @@ class JobCleanPipeline:
 
 # ==================================
 # CÁC PIPELINES BẢNG CHIỀU VÀ BẢNG NỐI
-# (Đây là phiên bản đầy đủ từ file upload của bạn + các file bị thiếu)
+# (Phiên bản (Version) "Sạch" (Clean) "Cuối cùng" (Final) - Đã "Sửa" (Fixed) 1:1)
 # ==================================
 
 class CompanyPipeline:
@@ -195,107 +195,83 @@ class BenefitPipeline:
         [self.benefits_writer.writerow({"benefitId": b_id, "benefitName": b_data["benefitName"], "benefitValue": b_data["benefitValue"]}) for b_id, b_data in self.benefits.items()]; [h.close() for h in [self.benefits_file_handle] if h]
         [self.job_benefits_writer.writerow(m) for m in self.job_benefits]; [h.close() for h in [self.job_benefits_file_handle] if h]
 
-class IndustryPipeline:
-    """Ghi 2 file (industries, job_industries) vào thư mục theo ngày"""
+class IndustryDimPipeline:
+    """Ghi (Write) Bảng "Dim" (Dim) "Dim" (Dim) (1:1) (industries.csv)"""
     def __init__(self):
-        self.industries = {}; self.job_industries = []; self.seen_job_industries = set()
-        self.industries_writer = None; self.industries_file_handle = None
-        self.job_industries_writer = None; self.job_industries_file_handle = None
+        self.industries = {}
+        self.fieldnames = ["industryId", "industryName"]
+        self.file_handle = None; self.writer = None
 
     def open_spider(self, spider):
         output_dir = get_output_dir(spider)
-        industries_path = os.path.join(output_dir, "industries.csv"); self.industries_file_handle = open(industries_path, "w", encoding="utf-8", newline=""); self.industries_writer = csv.DictWriter(self.industries_file_handle, fieldnames=["industryId", "industryName"]); self.industries_writer.writeheader()
-        job_industries_path = os.path.join(output_dir, "job_industries.csv"); self.job_industries_file_handle = open(job_industries_path, "w", encoding="utf-8", newline=""); self.job_industries_writer = csv.DictWriter(self.job_industries_file_handle, fieldnames=["jobId", "industryId"]); self.job_industries_writer.writeheader()
+        file_path = os.path.join(output_dir, "industries.csv")
+        self.file_handle = open(file_path, "w", encoding="utf-8", newline="")
+        self.writer = csv.DictWriter(self.file_handle, fieldnames=self.fieldnames)
+        self.writer.writeheader()
 
     def process_item(self, item, spider):
-        industries = item.get("industriesV3", []); job_id = item.get("job_id")
-        if industries and job_id is not None:
-            try:
-                job_id_int = int(job_id)
-                for ind in industries:
-                    ind_id = ind.get("industryV3Id"); ind_name = ind.get("industryV3Name")
-                    if ind_id is None or ind_name is None: continue
-                    try:
-                        ind_id_int = int(ind_id)
-                        if ind_id_int not in self.industries: self.industries[ind_id_int] = {"industryName": ind_name}
-                        if (job_id_int, ind_id_int) not in self.seen_job_industries: self.job_industries.append({"jobId": job_id_int, "industryId": ind_id_int}); self.seen_job_industries.add((job_id_int, ind_id_int))
-                    except (ValueError, TypeError): continue
-            except (ValueError, TypeError): pass
+        # (Lấy (Get) "Dữ liệu" (Data) 1:1 "từ" (from) "Nguồn" (Source))
+        industries = item.get("industriesV3", [])
+        if industries:
+            # (Chúng ta "chỉ" (only) "lấy" (take) "Ngành" (Industry) "đầu tiên" (first) (vì (because) 1:1))
+            ind = industries[0] 
+            ind_id = ind.get("industryV3Id"); ind_name = ind.get("industryV3Name")
+            if ind_id is not None and ind_name is not None:
+                try:
+                    ind_id_int = int(ind_id)
+                    if ind_id_int not in self.industries:
+                        self.industries[ind_id_int] = {"industryName": ind_name}
+                except (ValueError, TypeError): pass
         return item
 
     def close_spider(self, spider):
-        [self.industries_writer.writerow({"industryId": i_id, "industryName": i_data["industryName"]}) for i_id, i_data in self.industries.items()]; [h.close() for h in [self.industries_file_handle] if h]
-        [self.job_industries_writer.writerow(m) for m in self.job_industries]; [h.close() for h in [self.job_industries_file_handle] if h]
+        for i_id, i_data in self.industries.items():
+            self.writer.writerow({"industryId": i_id, "industryName": i_data["industryName"]})
+        if self.file_handle: self.file_handle.close()
 
-class JobFunctionPipeline:
-    """Ghi 2 file (job_functions, job_jobFunctions) vào thư mục theo ngày"""
+class JobFunctionDimPipeline:
+    """Ghi (Write) 2 Bảng "Dim" (Dim) 1:1 (job_functions.csv & group_job_functions.csv)"""
     def __init__(self):
-        self.job_functions = {}; self.job_jobfunctions = []; self.seen_job_functions = set()
-        self.job_functions_writer = None; self.job_functions_file_handle = None
-        self.job_jobfunctions_writer = None; self.job_jobfunctions_file_handle = None
+        self.job_functions = {}; self.group_job_functions = {}
+        self.func_writer = None; self.func_file_handle = None
+        self.group_func_writer = None; self.group_func_file_handle = None
 
     def open_spider(self, spider):
         output_dir = get_output_dir(spider)
-        func_path = os.path.join(output_dir, "job_functions.csv"); self.job_functions_file_handle = open(func_path, "w", encoding="utf-8", newline=""); self.job_functions_writer = csv.DictWriter(self.job_functions_file_handle, fieldnames=["jobFunctionId", "jobFunctionName"]); self.job_functions_writer.writeheader()
-        job_func_path = os.path.join(output_dir, "job_jobFunctions.csv"); self.job_jobfunctions_file_handle = open(job_func_path, "w", encoding="utf-8", newline=""); self.job_jobfunctions_writer = csv.DictWriter(self.job_jobfunctions_file_handle, fieldnames=["jobId", "jobFunctionId"]); self.job_jobfunctions_writer.writeheader()
+        func_path = os.path.join(output_dir, "job_functions.csv"); self.func_file_handle = open(func_path, "w", encoding="utf-8", newline=""); self.func_writer = csv.DictWriter(self.func_file_handle, fieldnames=["jobFunctionId", "jobFunctionName"]); self.func_writer.writeheader()
+        group_func_path = os.path.join(output_dir, "group_job_functions.csv"); self.group_func_file_handle = open(group_func_path, "w", encoding="utf-8", newline=""); self.group_func_writer = csv.DictWriter(self.group_func_file_handle, fieldnames=["groupJobFunctionId", "groupJobFunctionName"]); self.group_func_writer.writeheader()
 
     def process_item(self, item, spider):
-        job_func = item.get("jobFunctionsV3"); job_id = item.get("job_id")
-        if job_func and job_id is not None:
-            try:
-                job_id_int = int(job_id)
-                func_id = job_func.get("jobFunctionV3Id"); func_name = job_func.get("jobFunctionV3Name")
-                if func_id is None or func_name is None: return item
+        # (1. Lấy (Get) "Con" (Child) (Function))
+        job_func = item.get("jobFunctionsV3")
+        if job_func:
+            func_id = job_func.get("jobFunctionV3Id"); func_name = job_func.get("jobFunctionV3Name")
+            if func_id is not None and func_name is not None:
                 try:
                     func_id_int = int(func_id)
-                    if func_id_int not in self.job_functions: self.job_functions[func_id_int] = {"jobFunctionName": func_name}
-                    if (job_id_int, func_id_int) not in self.seen_job_functions: self.job_jobfunctions.append({"jobId": job_id_int, "jobFunctionId": func_id_int}); self.seen_job_functions.add((job_id_int, func_id_int))
+                    if func_id_int not in self.job_functions:
+                        self.job_functions[func_id_int] = {"jobFunctionName": func_name}
                 except (ValueError, TypeError): pass
-            except (ValueError, TypeError): pass
-        return item
-
-    def close_spider(self, spider):
-        [self.job_functions_writer.writerow({"jobFunctionId": f_id, "jobFunctionName": f_data["jobFunctionName"]}) for f_id, f_data in self.job_functions.items()]; [h.close() for h in [self.job_functions_file_handle] if h]
-        [self.job_jobfunctions_writer.writerow(m) for m in self.job_jobfunctions]; [h.close() for h in [self.job_jobfunctions_file_handle] if h]
-
-class GroupJobFunctionPipeline:
-    """Ghi 2 file (group_job_functions, job_group_jobFunctions) vào thư mục theo ngày"""
-    def __init__(self):
-        self.group_job_functions = {}; self.job_group_jobfunctions = []; self.seen_job_group_functions = set()
-        self.group_func_writer = None; self.group_func_file_handle = None
-        self.job_group_func_writer = None; self.job_group_func_file_handle = None
-
-    def open_spider(self, spider):
-        output_dir = get_output_dir(spider)
-        group_func_path = os.path.join(output_dir, "group_job_functions.csv"); self.group_func_file_handle = open(group_func_path, "w", encoding="utf-8", newline=""); self.group_func_writer = csv.DictWriter(self.group_func_file_handle, fieldnames=["groupJobFunctionId", "groupJobFunctionName"]); self.group_func_writer.writeheader()
-        job_group_func_path = os.path.join(output_dir, "job_group_jobFunctions.csv"); self.job_group_func_file_handle = open(job_group_func_path, "w", encoding="utf-8", newline=""); self.job_group_func_writer = csv.DictWriter(self.job_group_func_file_handle, fieldnames=["jobId", "groupJobFunctionId"]); self.job_group_func_writer.writeheader()
-
-    def process_item(self, item, spider):
-        group_func = item.get("groupJobFunctions"); job_id = item.get("job_id")
         
-        if group_func and job_id is not None:
-            try:
-                job_id_int = int(job_id)
-                g_id = group_func.get("groupJobFunctionId"); g_name = group_func.get("groupJobFunctionName")
-                if g_id is None or g_name is None: return item
+        # (2. Lấy (Get) "Cha" (Parent) (Group Function))
+        group_func = item.get("groupJobFunctions")
+        if group_func:
+            g_id = group_func.get("groupJobFunctionId"); g_name = group_func.get("groupJobFunctionName")
+            if g_id is not None and g_name is not None:
                 try:
                     g_id_int = int(g_id)
-                    # Ghi bảng chiều (danh sách group)
                     if g_id_int not in self.group_job_functions: 
                         self.group_job_functions[g_id_int] = {"groupJobFunctionName": g_name}
-                    # Ghi bảng nối (mapping)
-                    if (job_id_int, g_id_int) not in self.seen_job_group_functions: 
-                        self.job_group_jobfunctions.append({"jobId": job_id_int, "groupJobFunctionId": g_id_int}); self.seen_job_group_functions.add((job_id_int, g_id_int))
                 except (ValueError, TypeError): pass
-            except (ValueError, TypeError): pass
         return item
 
     def close_spider(self, spider):
+        [self.func_writer.writerow({"jobFunctionId": f_id, "jobFunctionName": f_data["jobFunctionName"]}) for f_id, f_data in self.job_functions.items()]; [h.close() for h in [self.func_file_handle] if h]
         [self.group_func_writer.writerow({"groupJobFunctionId": g_id, "groupJobFunctionName": g_data["groupJobFunctionName"]}) for g_id, g_data in self.group_job_functions.items()]; [h.close() for h in [self.group_func_file_handle] if h]
-        [self.job_group_func_writer.writerow(m) for m in self.job_group_jobfunctions]; [h.close() for h in [self.job_group_func_file_handle] if h]
+
 
 # ==================================
-# PIPELINE BẢNG SỰ KIỆN THỜI GIAN (MỚI)
+# PIPELINE BẢNG SỰ KIỆN THỜI GIAN
 # ==================================
 class JobTimePipeline:
     """Tạo bảng riêng cho Vòng đời Job (job_timelife.csv)"""
@@ -334,16 +310,22 @@ class JobTimePipeline:
             self.file_handle.close()
 
 # ==================================
-# PIPELINE BẢNG FACT (ĐÃ SỬA)
+# <<< FIX 3: PIPELINE BẢNG FACT >>>
 # ==================================
 class JobPostingPipeline:
-    """(ĐÃ SỬA) Bảng fact Job (đã tách riêng ngày tháng)"""
+    """(ĐÃ SỬA) Bảng fact Job (đã "hấp thụ" (absorbed) 3 "khóa" (keys) 1:1)"""
     def __init__(self):
         self.jobs = {} 
         self.fieldnames = [
-            "job_id", "groupJob_id", "title", 
+            # (Các "cột" (cols) "cũ" (old))
+            "job_id", "title", 
             "jobDescription", "jobRequirement", "salaryMax", "salaryMin",
-            "salaryCurrency", "companyId", "job_url"
+            "salaryCurrency", "companyId", "job_url",
+            
+            # (3 "Cột" (Cols) "Khóa" (Key) 1:1 "Mới" (New) (Thay thế (Replacing) 'groupJob_id' (cũ)))
+            "jobFunctionId",
+            "groupJobFunctionId",
+            "industryId"
         ]
         self.file_handle = None
         self.writer = None
@@ -360,10 +342,33 @@ class JobPostingPipeline:
         if job_id is not None:
             try:
                 job_id_int = int(job_id)
-                job_data = {key: item.get(key) for key in self.fieldnames}
+                
+                # (Lấy (Get) "dữ liệu" (data) "cũ" (old))
+                job_data = {key: item.get(key) for key in [
+                    "title", "jobDescription", "jobRequirement", "salaryMax", 
+                    "salaryMin", "salaryCurrency", "companyId", "job_url"
+                ]}
                 job_data['job_id'] = job_id_int 
+                
+                # (Lấy (Get) "Dữ liệu" (Data) 1:1 "mới" (new) (Từ (From) "gốc" (root) "của" (of) "item" (item)))
+                
+                # (1. Lấy (Get) Function (Con))
+                job_func = item.get("jobFunctionsV3")
+                job_data['jobFunctionId'] = int(job_func.get("jobFunctionV3Id")) if (job_func and job_func.get("jobFunctionV3Id")) else None
+                
+                # (2. Lấy (Get) Group Function (Cha))
+                group_func = item.get("groupJobFunctions")
+                job_data['groupJobFunctionId'] = int(group_func.get("groupJobFunctionId")) if (group_func and group_func.get("groupJobFunctionId")) else None
+
+                # (3. Lấy (Get) Industry (Ngành))
+                industries = item.get("industriesV3", [])
+                job_data['industryId'] = int(industries[0].get("industryV3Id")) if (industries and industries[0].get("industryV3Id")) else None
+
                 self.jobs[job_id_int] = job_data
-            except (ValueError, TypeError): pass
+                
+            except (ValueError, TypeError): 
+                # (Bỏ qua (Skip) "tin đăng" (job) "này" (this) "nếu" (if) "id" (id) "bị" (is) "hỏng" (bad))
+                pass 
         return item 
 
     def close_spider(self, spider):
@@ -371,3 +376,78 @@ class JobPostingPipeline:
             self.writer.writerow(job_data)
         if self.file_handle:
             self.file_handle.close()
+
+class IndustryPipeline:
+    """Ghi (Write) Bảng "Dim" (Dim) "Dim" (Dim) (1:1) (industries.csv)"""
+    def __init__(self):
+        self.industries = {}
+        self.fieldnames = ["industryId", "industryName"]
+        self.file_handle = None; self.writer = None
+
+    def open_spider(self, spider):
+        output_dir = get_output_dir(spider)
+        file_path = os.path.join(output_dir, "industries.csv")
+        self.file_handle = open(file_path, "w", encoding="utf-8", newline="")
+        self.writer = csv.DictWriter(self.file_handle, fieldnames=self.fieldnames)
+        self.writer.writeheader()
+
+    def process_item(self, item, spider):
+        # (Lấy (Get) "Dữ liệu" (Data) 1:1 "từ" (from) "Nguồn" (Source))
+        industries = item.get("industriesV3", [])
+        if industries:
+            # (Chúng ta "chỉ" (only) "lấy" (take) "Ngành" (Industry) "đầu tiên" (first) (vì (because) 1:1))
+            ind = industries[0] 
+            ind_id = ind.get("industryV3Id"); ind_name = ind.get("industryV3Name")
+            if ind_id is not None and ind_name is not None:
+                try:
+                    ind_id_int = int(ind_id)
+                    if ind_id_int not in self.industries:
+                        self.industries[ind_id_int] = {"industryName": ind_name}
+                except (ValueError, TypeError): pass
+        return item
+
+    def close_spider(self, spider):
+        for i_id, i_data in self.industries.items():
+            self.writer.writerow({"industryId": i_id, "industryName": i_data["industryName"]})
+        if self.file_handle: self.file_handle.close()
+
+class JobFunctionPipeline:
+    """Ghi (Write) 2 Bảng "Dim" (Dim) 1:1 (job_functions.csv & group_job_functions.csv)"""
+    def __init__(self):
+        self.job_functions = {}; self.group_job_functions = {}
+        self.func_writer = None; self.func_file_handle = None
+        self.group_func_writer = None; self.group_func_file_handle = None
+
+    def open_spider(self, spider):
+        output_dir = get_output_dir(spider)
+        func_path = os.path.join(output_dir, "job_functions.csv"); self.func_file_handle = open(func_path, "w", encoding="utf-8", newline=""); self.func_writer = csv.DictWriter(self.func_file_handle, fieldnames=["jobFunctionId", "jobFunctionName"]); self.func_writer.writeheader()
+        group_func_path = os.path.join(output_dir, "group_job_functions.csv"); self.group_func_file_handle = open(group_func_path, "w", encoding="utf-8", newline=""); self.group_func_writer = csv.DictWriter(self.group_func_file_handle, fieldnames=["groupJobFunctionId", "groupJobFunctionName"]); self.group_func_writer.writeheader()
+
+    def process_item(self, item, spider):
+        # (1. Lấy (Get) "Con" (Child) (Function))
+        job_func = item.get("jobFunctionsV3")
+        if job_func:
+            func_id = job_func.get("jobFunctionV3Id"); func_name = job_func.get("jobFunctionV3Name")
+            if func_id is not None and func_name is not None:
+                try:
+                    func_id_int = int(func_id)
+                    if func_id_int not in self.job_functions:
+                        self.job_functions[func_id_int] = {"jobFunctionName": func_name}
+                except (ValueError, TypeError): pass
+        
+        # (2. Lấy (Get) "Cha" (Parent) (Group Function))
+        group_func = item.get("groupJobFunctions")
+        if group_func:
+            g_id = group_func.get("groupJobFunctionId"); g_name = group_func.get("groupJobFunctionName")
+            if g_id is not None and g_name is not None:
+                try:
+                    g_id_int = int(g_id)
+                    if g_id_int not in self.group_job_functions: 
+                        self.group_job_functions[g_id_int] = {"groupJobFunctionName": g_name}
+                except (ValueError, TypeError): pass
+        return item
+
+    def close_spider(self, spider):
+        [self.func_writer.writerow({"jobFunctionId": f_id, "jobFunctionName": f_data["jobFunctionName"]}) for f_id, f_data in self.job_functions.items()]; [h.close() for h in [self.func_file_handle] if h]
+        [self.group_func_writer.writerow({"groupJobFunctionId": g_id, "groupJobFunctionName": g_data["groupJobFunctionName"]}) for g_id, g_data in self.group_job_functions.items()]; [h.close() for h in [self.group_func_file_handle] if h]
+

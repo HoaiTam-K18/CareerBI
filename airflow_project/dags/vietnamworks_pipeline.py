@@ -32,11 +32,11 @@ with DAG(
     tags=['elt', 'scrapy', 'medallion', 'refactored'],
 ) as dag:
 
-    # # TASK 1: Extract (Giữ nguyên)
-    # task_extract_scrapy = BashOperator(
-    #     task_id='run_scrapy_spider',
-    #     bash_command='cd /opt/airflow/scrape_job && scrapy crawl vietnamworks'
-    # )
+    # TASK 1: Extract (Giữ nguyên)
+    task_extract_scrapy = BashOperator(
+        task_id='run_scrapy_spider',
+        bash_command='cd /opt/airflow/scrape_job && scrapy crawl vietnamworks'
+    )
 
     # TASK 2: Load Bronze
     task_load_bronze = PythonOperator(
@@ -54,7 +54,6 @@ with DAG(
     task_dbt_run = BashOperator(
         task_id='run_dbt_gold',
         
-        # SỬA LẠI: Chỉ định rõ ràng mọi đường dẫn, không cần 'cd'
         bash_command=(
             f"dbt build "
             f"--project-dir {DBT_PROJECT_DIR} "  # Nơi chứa dbt_project.yml
@@ -64,5 +63,4 @@ with DAG(
     )
 
     # THỨ TỰ (Thêm Task 4) 
-    # task_extract_scrapy >> 
-    task_load_bronze >> task_transform_silver >> task_dbt_run
+    task_extract_scrapy >> task_load_bronze >> task_transform_silver >> task_dbt_run

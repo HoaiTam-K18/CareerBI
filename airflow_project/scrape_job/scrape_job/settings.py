@@ -53,7 +53,6 @@ ITEM_PIPELINES = {
    "scrape_job.pipelines.BenefitPipeline": 230,
    "scrape_job.pipelines.IndustryPipeline": 240,
    "scrape_job.pipelines.JobFunctionPipeline": 250,
-   "scrape_job.pipelines.GroupJobFunctionPipeline": 260,
    
    # <<< PIPELINE MỚI (CHẠY TRƯỚC BẢNG FACT)
    "scrape_job.pipelines.JobTimePipeline": 700, 

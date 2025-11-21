@@ -32,10 +32,7 @@ def load_bronze():
         "group_job_functions.csv": "bronze_group_job_functions",
         "job_skills.csv": "bronze_bridge_job_skills",
         "job_benefits.csv": "bronze_bridge_job_benefits",
-        "job_industries.csv": "bronze_bridge_job_industries",
         "job_cities.csv": "bronze_bridge_job_cities",
-        "job_jobFunctions.csv": "bronze_bridge_job_jobFunctions",
-        "job_group_jobFunctions.csv": "bronze_bridge_job_group_jobFunctions"
     }
 
     try:
