@@ -1,3 +1,5 @@
+{{ config(materialized='table') }}
+
 SELECT
     d.benefit_name,
     COUNT(DISTINCT f.job_id) AS job_postings_count

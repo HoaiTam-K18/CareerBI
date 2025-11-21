@@ -59,6 +59,18 @@ models:
       - name: posted_date_key
         data_tests:
           - relationships: { to: ref('dim_date'), field: date_key }
+      - name: job_function_id
+        description: "Khóa ngoại (FK) 1:1 (Con) (từ Silver 'sạch')"
+        tests:
+          - relationships: { to: ref('dim_job_functions'), field: job_function_id }
+      - name: group_job_function_id
+        description: "Khóa ngoại (FK) 1:1 (Cha) (từ Silver 'sạch')"
+        tests:
+          - relationships: { to: ref('dim_group_job_functions'), field: group_job_function_id}
+      - name: industry_id
+        description: "Khóa ngoại (FK) 1:1 (Industry) (từ Silver 'sạch')"
+        tests:
+          - relationships: { to: ref('dim_industries'), field: industry_id}
 
   - name: fct_job_skills # Fact "Không số"
     columns:
@@ -86,30 +98,3 @@ models:
       - name: benefit_id
         data_tests:
           - relationships: { to: ref('dim_benefits'), field: benefit_id }
-          
-  - name: fct_job_industries
-    columns:
-      - name: job_id
-        data_tests:
-          - relationships: { to: ref('dim_job'), field: job_id }
-      - name: industry_id
-        data_tests:
-          - relationships: { to: ref('dim_industries'), field: industry_id }
-          
-  - name: fct_job_jobfunctions
-    columns:
-      - name: job_id
-        data_tests:
-          - relationships: { to: ref('dim_job'), field: job_id }
-      - name: job_function_id
-        data_tests:
-          - relationships: { to: ref('dim_job_functions'), field: job_function_id }
-          
-  - name: fct_job_group_jobfunctions
-    columns:
-      - name: job_id
-        data_tests:
-          - relationships: { to: ref('dim_job'), field: job_id }
-      - name: group_job_function_id
-        data_tests:
-          - relationships: { to: ref('dim_group_job_functions'), field: group_job_function_id }

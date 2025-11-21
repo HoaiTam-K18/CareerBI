@@ -3,7 +3,11 @@ WITH postings AS (
         job_id,
         company_id,
         salary_max,
-        salary_min
+        salary_min,
+        job_function_id,
+        group_job_function_id,
+        industry_id
+
     FROM
         {{ source('silver', 'silver_job_postings') }}
 ),
@@ -28,27 +32,29 @@ calendar AS (
         {{ ref('dim_date') }}
 )
 
--- === KHỐI SELECT CUỐI CÙNG ===
 SELECT
     -- Khóa (Keys)
     postings.job_id,
     postings.company_id,
     calendar.date_key AS posted_date_key,
     
-    -- Số đo (Measures) - ĐÃ SỬA THEO YÊU CẦU MỚI
+    postings.job_function_id,      
+    postings.group_job_function_id,
+    postings.industry_id,
     
-    -- (Bất cứ lương MAX nào dưới $150 -> NULL)
+    -- (Giữ nguyên Lọc "Sàn" $250)
     CASE 
-        WHEN postings.salary_max < 150 THEN NULL
+        WHEN postings.salary_max < 250 THEN NULL
         ELSE postings.salary_max 
     END AS salary_max,
     
+    -- (Giữ nguyên Lọc "Sàn" $250)
     CASE 
         WHEN postings.salary_min < 250 THEN NULL
         ELSE postings.salary_min
     END AS salary_min,
 
-    -- (Bất cứ tin nào > 90 ngày -> NULL)
+    -- (Giữ nguyên Lọc "Trần" 90 ngày)
     CASE 
         WHEN timelife.job_lifespan_days > 90 THEN NULL
         ELSE timelife.job_lifespan_days

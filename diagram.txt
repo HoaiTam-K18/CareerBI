@@ -1,0 +1,136 @@
+// ----- KHO CHỨA (Gold Layer) -----
+// (Mô hình Thiên hà (Galaxy Schema) "lai" (hybrid) - Đã "Sửa" (Fixed) 1:1)
+
+// ===============================================
+// BẢNG 1: DIMENSIONS (Bảng "Mô tả")
+// ===============================================
+
+Table dim_date {
+  date_key integer [primary key]
+  full_date date
+  year integer
+  month integer
+  day_of_week integer
+}
+
+Table dim_job {
+  job_id integer [primary key]
+  title varchar
+  job_description text
+  job_requirement text
+  job_level varchar [note: 'Cấp bậc (đã "sạch" (clean)): C-Level, Manager, Staff...']
+}
+
+Table dim_companies {
+  company_id integer [primary key]
+  company_name varchar
+}
+
+Table dim_cities {
+  city_id integer [primary key]
+  city_name varchar
+}
+
+Table dim_skills {
+  skill_id integer [primary key]
+  skill_name varchar
+}
+
+Table dim_benefits {
+  benefit_id integer [primary key]
+  benefit_name varchar
+}
+
+Table dim_industries {
+  industry_id integer [primary key]
+  industry_name varchar
+}
+
+// (2 Bảng "Dim" (Dim) 1:1 "sạch" (clean) (FIX "Quái vật" (Monster) M-2-M))
+Table dim_job_functions {
+  job_function_id integer [primary key]
+  job_function_name varchar
+}
+Table dim_group_job_functions {
+  group_job_function_id integer [primary key]
+  group_job_function_name varchar
+}
+
+
+// ===============================================
+// BẢNG 2: FACTS (Bảng "Sự kiện" (Events) / "Số đo" (Measures))
+// ===============================================
+
+// 2.1: Bảng "Fact" (Fact) "Cha" (Parent) (1 Hàng (Row) = 1 Job)
+Table fct_job_postings {
+  // (Đây là "trái tim" (heart) của Tầng Gold (Gold))
+  job_id integer [primary key]
+  
+  // --- Khóa Ngoại (FKs) (1:1 và N:1) ---
+  posted_date_key integer [not null]
+  company_id integer
+  
+  // (FIX LỖI 1:1 (Tin 103))
+  job_function_id integer [note: 'FK 1:1 (Con) (đã "hấp thụ" (absorbed))']
+  group_job_function_id integer [note: 'FK 1:1 (Cha) (đã "hấp thụ" (absorbed))']
+  
+  // --- Số đo (Measures) ---
+  salary_max float [note: 'USD (đã "sạch" (clean) $250)']
+  salary_min float [note: 'USD (đã "sạch" (clean) $250)']
+  job_lifespan_days integer [note: 'Vòng đời (đã "sạch" (clean) 90 ngày)']
+}
+
+// 2.2: Bảng "Fact" (Fact) "Cầu" (Bridge) (M-2-M "Thật" (Real))
+// (4 Bảng "Cầu" (Bridge) "con" (child) "nối" (link) "Cha" (Parent) (Fact) "với" (to) "Dimensions" (Dims) (M-2-M))
+
+Table fct_job_skills {
+  // (Chỉ "lưu" (stores) 2 "khóa" (keys))
+  job_id integer [primary key]
+  skill_id integer [primary key]
+}
+
+Table fct_job_industries {
+  job_id integer [primary key]
+  industry_id integer [primary key]
+}
+
+Table fct_job_benefits {
+  job_id integer [primary key]
+  benefit_id integer [primary key]
+}
+
+Table fct_job_cities {
+  job_id integer [primary key]
+  city_id integer [primary key]
+}
+
+// ===============================================
+// BẢNG 3: RELATIONSHIPS (Liên kết "Thiên hà" (Galaxy))
+// ===============================================
+
+// (Liên kết 1:1)
+Ref fct_job_postings_to_dim_job: fct_job_postings.job_id - dim_job.job_id
+
+// (Liên kết N:1 "trực tiếp" (direct) (từ "Cha" (Fact)))
+Ref: fct_job_postings.posted_date_key > dim_date.date_key
+Ref: fct_job_postings.company_id > dim_companies.company_id
+Ref: fct_job_postings.job_function_id > dim_job_functions.job_function_id
+Ref: fct_job_postings.group_job_function_id > dim_group_job_functions.group_job_function_id
+
+// (Liên kết M:N "gián tiếp" (indirect) (qua "Bảng Cầu" (Bridge)))
+
+// (Skills M:N)
+Ref: fct_job_skills.job_id > fct_job_postings.job_id
+Ref: fct_job_skills.skill_id > dim_skills.skill_id
+
+// (Industries M:N)
+Ref: fct_job_industries.job_id > fct_job_postings.job_id
+Ref: fct_job_industries.industry_id > dim_industries.industry_id
+
+// (Benefits M:N)
+Ref: fct_job_benefits.job_id > fct_job_postings.job_id
+Ref: fct_job_benefits.benefit_id > dim_benefits.benefit_id
+
+// (Cities M:N)
+Ref: fct_job_cities.job_id > fct_job_postings.job_id
+Ref: fct_job_cities.city_id > dim_cities.city_id

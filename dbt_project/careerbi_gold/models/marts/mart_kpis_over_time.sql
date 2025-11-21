@@ -1,3 +1,5 @@
+{{ config(materialized='table') }}
+
 SELECT
     d.calendar_year,
     d.month_number,
@@ -7,6 +9,6 @@ FROM
 JOIN
     {{ ref('dim_date') }} AS d
 ON f.posted_date_key = d.date_key
-WHERE d.date_key >= 20250801 -- (Lọc "rác")
+WHERE d.date_key >= 20250901
 GROUP BY 1, 2
 ORDER BY 1, d.month_number

@@ -1,3 +1,6 @@
+-- models/gold/dim_job.sql
+-- (Phiên bản (Version) "Sạch" (Clean) "Cuối cùng" (Final) - Đã "Gộp" (Merged) "Logic" (Logic) (Tin 144) + "Sửa" (Fixes) (Tin 142))
+
 WITH silver_jobs AS (
     SELECT
         job_id,
@@ -40,7 +43,14 @@ SELECT
         -- Cấp 4: Lead / Senior (Phải chạy TRƯỚC "Specialist")
         WHEN title_cleaned LIKE '%lead%' OR title_cleaned LIKE '%leader%' 
              OR title_cleaned LIKE '%trưởng nhóm%' THEN 'Lead'
+        
+        -- (FIX MỚI (Tin 142): "Supervisor" (Giám sát) "là" (is) "Lead")
+        WHEN title_cleaned LIKE '%supervisor%' OR title_cleaned LIKE '%giám sát%' THEN 'Lead'
+             
         WHEN title_cleaned LIKE '%senior%' OR title_cleaned LIKE '%cao cấp%' THEN 'Senior'
+        
+        -- (FIX MỚI (Tin 142): "Partner" (Đối tác) "là" (is) "Senior")
+        WHEN title_cleaned LIKE '%partner%' THEN 'Senior'
         
         -- Cấp 5: Specialist / Chuyên viên (Phải chạy TRƯỚC "Staff")
         WHEN title_cleaned LIKE '%specialist%' OR title_cleaned LIKE '%chuyên viên%' THEN 'Specialist'
@@ -57,7 +67,7 @@ SELECT
         -- Cấp 6: Junior / Intern (Cấp thấp nhất)
         WHEN title_cleaned LIKE '%junior%' OR title_cleaned LIKE '%mới ra trường%' THEN 'Junior'
         WHEN title_cleaned LIKE '%intern%' OR title_cleaned LIKE '%thực tập%' 
-             OR title_cleaned LIKE '%trainee%' THEN 'Intern' -- (Bắt "Management Trainee")
+             OR title_cleaned LIKE '%trainee%' THEN 'Intern'
 
         -- Cấp 7: Mặc định (Ví dụ: "Nhân Viên Kinh Doanh")
         ELSE 'Staff'

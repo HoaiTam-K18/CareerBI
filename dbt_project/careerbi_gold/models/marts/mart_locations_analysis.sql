@@ -1,5 +1,4 @@
--- models/marts/mart_cities_over_time.sql
--- "Nấu" (pre-calculate) số lượng job cho MỌI thành phố, MỌI tháng
+{{ config(materialized='table') }}
 
 WITH dates_per_job AS (
     SELECT 
