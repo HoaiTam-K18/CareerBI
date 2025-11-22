@@ -1,10 +1,8 @@
-# dags/logic/bronze_loader.py
-# LOGIC TASK 2: BRONZE
-
 import os
 import pandas as pd
 from datetime import datetime
-from .db_utils import get_db_engine # Import từ file chung
+import shutil
+from .db_utils import get_db_engine
 
 def get_daily_folder_path():
     """Hàm này lấy đường dẫn thư mục theo ngày (tuyệt đối)."""
@@ -35,7 +33,22 @@ def load_bronze():
         "job_cities.csv": "bronze_bridge_job_cities",
     }
 
+    def cleanup_daily_folder(data_dir: str):
+        """ Xóa toàn bộ thư mục chứa dữ liệu đã được tải lên Bronze Layer thành công. """
+        print(f"Bắt đầu tác vụ Dọn dẹp (Cleanup) thư mục: {data_dir}")
+        try:
+            if os.path.exists(data_dir) and os.path.isdir(data_dir):
+                # shutil.rmtree được dùng để xóa toàn bộ cây thư mục
+                shutil.rmtree(data_dir)
+                print(f"Đã xóa thành công thư mục dữ liệu: {data_dir}")
+            else:
+                print(f"Thư mục {data_dir} không tồn tại hoặc đã bị xóa trước đó. Bỏ qua.")
+        except Exception as e:
+            # Nếu xóa thất bại, cảnh báo nhưng không dừng toàn bộ DAG
+            print(f"CẢNH BÁO: Lỗi khi dọn dẹp thư mục {data_dir}: {e}")
+
     try:
+        # --- BƯỚC 1: TẢI DỮ LIỆU ---
         with get_db_engine() as engine:
             with engine.connect() as conn:
                 for csv_file, table_name in files_to_load.items():
@@ -48,6 +61,10 @@ def load_bronze():
                         print(f"LỖI NGHIÊM TRỌNG: Không tìm thấy file {file_path}. Dừng task.")
                         raise FileNotFoundError(f"File bắt buộc {file_path} không tìm thấy.")
         print("Hoàn thành Tải Bronze.")
+
+        # --- BƯỚC 2: DỌN DẸP DỮ LIỆU ĐÃ TẢI THÀNH CÔNG ---
+        cleanup_daily_folder(data_dir)
+
     except Exception as e:
         print(f"LỖI trong quá trình Load Bronze: {e}")
         raise
